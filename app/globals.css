@@ -57,3 +57,14 @@ body {
 .app-card:hover {
   transform: translateY(-4px);
 }
+
+/* Hide Dev Toolbars & Indicators */
+#vercel-live-feedback,
+.__next-prerender-indicator,
+[data-vercel-toolbar],
+nextjs-portal,
+#nextjs-dev-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

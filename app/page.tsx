@@ -266,7 +266,10 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
   );
 };
 
+import { useAuth } from "@/components/AuthProvider";
+
 export default function Home() {
+  const { logout, user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [activeTab, setActiveTab] = useState<Category>("All Apps");
@@ -352,14 +355,23 @@ export default function Home() {
           <WeatherWidget />
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
+          {user && (
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-white/10 transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-default">
+              <img src={user.picture} alt={user.name} className="w-6 h-6 rounded-full border border-black/10" />
+              <span className="text-sm font-semibold text-zinc-900 dark:text-white hidden sm:block">{user.name}</span>
+            </div>
+          )}
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="p-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
           >
             {theme === "dark" ? <Sun size={20} className="text-zinc-200" /> : <Moon size={20} className="text-zinc-500" />}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-white group">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-white group"
+          >
             <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-sm font-medium">Logout</span>
           </button>
