@@ -55,8 +55,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         router.push("/login");
     };
 
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "875374026106-sm300i0093g0puid7erhfeftu747thiu.apps.googleusercontent.com";
+    console.log("AuthProvider ClientID:", clientId ? "Loaded" : "Missing");
+
     return (
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+        <GoogleOAuthProvider clientId={clientId}>
             <AuthContext.Provider value={{ user, login, logout, loading }}>
                 {children}
             </AuthContext.Provider>
