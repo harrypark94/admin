@@ -84,9 +84,11 @@ interface AppItem {
 const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
 
 const APPS: AppItem[] = [
-  { id: "cost", name: "고정비", category: ["Admin"], icon: Receipt, url: "https://cost.madeone.kr", favorite: true },
-  { id: "commute", name: "출퇴근", category: ["Admin"], icon: Clock, url: "https://hr.madeone.kr", favorite: true },
-  { id: "asset", name: "Asset", category: ["Admin"], icon: ShoppingBag, url: "https://admin.madeone.kr", favorite: true },
+  { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
+  { id: "commute", name: "출퇴근", category: ["Admin"], icon: "/icon_commute.png", url: "https://hr.madeone.kr", favorite: true },
+  { id: "asset", name: "Asset", category: ["Admin"], icon: "/icon_asset.png", url: "https://admin.madeone.kr", favorite: true },
+  { id: "ticket", name: "티켓", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket.madeone.kr", favorite: true },
+  { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
   { id: "notion", name: "Notion", category: ["Ops", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg", favorite: true },
   { id: "gdrive", name: "Google Drive", category: ["Ops"], icon: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" },
   { id: "adobe", name: "Adobe CC", category: ["Design"], icon: "https://upload.wikimedia.org/wikipedia/commons/4/4c/Adobe_Creative_Cloud_logo.svg" },
