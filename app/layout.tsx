@@ -10,6 +10,11 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "MADEONE | Admin Portal",
   description: "Gateway to MADEONE administrative services",
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+  themeColor: "#12141a",
 };
 
 export default function RootLayout({

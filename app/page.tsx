@@ -15,7 +15,10 @@ import {
   CloudRain,
   ShoppingBag,
   Clock,
-  Receipt
+  Receipt,
+  Plus,
+  X,
+  Globe
 } from "lucide-react";
 import Image from "next/image";
 
@@ -84,33 +87,121 @@ interface AppItem {
 const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
 
 const APPS: AppItem[] = [
+  { id: "zena", name: "ZENA", category: ["Admin"], icon: LayoutGrid, url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
   { id: "commute", name: "출퇴근", category: ["Admin"], icon: "/icon_commute.png", url: "https://hr.madeone.kr", favorite: true },
-  { id: "asset", name: "Asset", category: ["Admin"], icon: "/icon_asset.png", url: "https://admin.madeone.kr", favorite: true },
-  { id: "ticket", name: "티켓", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket.madeone.kr", favorite: true },
+  { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://admin.madeone.kr", favorite: true },
+  { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket.madeone.kr", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
-  { id: "notion", name: "Notion", category: ["Ops", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg", favorite: true },
-  { id: "gdrive", name: "Google Drive", category: ["Ops"], icon: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" },
-  { id: "adobe", name: "Adobe CC", category: ["Design"], icon: "https://upload.wikimedia.org/wikipedia/commons/4/4c/Adobe_Creative_Cloud_logo.svg" },
-  { id: "zoom", name: "Zoom", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e4/Zoom_Communications_Logo.svg", favorite: true },
-  { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg" },
-  { id: "admin", name: "Admin Panel", category: ["Admin"], icon: Settings, favorite: true },
+  { id: "notion", name: "Notion", category: ["Ops", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg", url: "https://notion.so", favorite: true },
+  { id: "gdrive", name: "Google Drive", category: ["Ops"], icon: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg", url: "https://drive.google.com" },
+  { id: "adobe", name: "Adobe CC", category: ["Design"], icon: "https://upload.wikimedia.org/wikipedia/commons/4/4c/Adobe_Creative_Cloud_logo.svg", url: "https://creativecloud.adobe.com" },
+  { id: "zoom", name: "Zoom", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/94/Zoom_app_icon.png", url: "https://zoom.us", favorite: true },
+  { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg", url: "https://meet.google.com" },
   { id: "hr", name: "HR Portal", category: ["Admin"], icon: UserCircle },
   { id: "miro", name: "Miro", category: ["Design", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/0/0e/Miro-logo.svg" },
 ];
 
 // --- Components ---
 
-const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite }: { app: AppItem, isFavoriteSection?: boolean, toggleFavorite?: (id: string) => void }) => {
+const AddAppModal = ({ isOpen, onClose, onAdd }: { isOpen: boolean, onClose: () => void, onAdd: (app: AppItem) => void }) => {
+  const [name, setName] = useState("");
+  const [url, setUrl] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !url) return;
+
+    let domain = url;
+    try {
+      domain = new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
+    } catch {
+      domain = url;
+    }
+
+    const newApp: AppItem = {
+      id: `custom-${Date.now()}`,
+      name,
+      url: url.startsWith("http") ? url : `https://${url}`,
+      category: ["All Apps" as Category],
+      icon: `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+      favorite: false
+    };
+
+    onAdd(newApp);
+    setName("");
+    setUrl("");
+    onClose();
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-2xl border border-black/5 dark:border-white/10"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold dark:text-white">Add New App</h2>
+              <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                <X size={20} className="dark:text-zinc-400" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">App Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="My Custom App"
+                  className="w-full px-4 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-transparent focus:border-blue-500 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all outline-none"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-700 dark:text-zinc-300">App URL</label>
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="example.com"
+                  className="w-full px-4 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-transparent focus:border-blue-500 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all outline-none"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold hover:opacity-90 transition-opacity mt-4 shadow-lg"
+              >
+                Create App
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: { app: AppItem, isFavoriteSection?: boolean, toggleFavorite?: (id: string) => void, onDelete?: (id: string) => void }) => {
   const [imgError, setImgError] = useState(false);
   const Icon = app.icon;
 
   return (
-    <motion.a
+    <motion.div
       layout
-      href={app.url || "#"}
-      target={app.url ? "_blank" : undefined}
-      rel={app.url ? "noopener noreferrer" : undefined}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
@@ -118,7 +209,12 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite }: { app: AppI
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
       className="flex flex-col items-center gap-3 group relative cursor-pointer"
     >
-      <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center p-3 sm:p-4 overflow-hidden border border-black/5 transition-all group-hover:scale-105 group-hover:shadow-lg">
+      <a
+        href={app.url || "#"}
+        target={app.url ? "_blank" : undefined}
+        rel={app.url ? "noopener noreferrer" : undefined}
+        className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center p-3 sm:p-4 overflow-hidden border border-black/5 transition-all group-hover:scale-105 group-hover:shadow-lg"
+      >
         {!imgError && typeof Icon === "string" ? (
           <img
             src={Icon}
@@ -131,26 +227,42 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite }: { app: AppI
             {typeof Icon === "function" ? (
               <Icon className="w-8 h-8 text-zinc-400" />
             ) : (
-              <LayoutGrid className="w-8 h-8 text-zinc-300" />
+              <Globe className="w-8 h-8 text-zinc-300" />
             )}
           </div>
         )}
+      </a>
 
-        {/* Favorite Toggle Button */}
+      {/* Favorite Toggle Button */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFavorite?.(app.id);
+        }}
+        className={`absolute top-1 right-1 p-1 rounded-full bg-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 ${app.favorite ? "opacity-100" : ""}`}
+      >
+        <Star size={14} className={app.favorite ? "fill-yellow-400 text-yellow-400" : "text-zinc-300 hover:text-zinc-500"} />
+      </button>
+
+      {/* Delete button only for custom apps */}
+      {app.id.startsWith("custom-") && !isFavoriteSection && (
         <button
           onClick={(e) => {
+            e.preventDefault();
             e.stopPropagation();
-            toggleFavorite?.(app.id);
+            onDelete?.(app.id);
           }}
-          className={`absolute top-1 right-1 p-1 rounded-full bg-white/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 ${app.favorite ? "opacity-100" : ""}`}
+          className="absolute top-1 left-1 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-sm"
         >
-          <Star size={14} className={app.favorite ? "fill-yellow-400 text-yellow-400" : "text-zinc-300 hover:text-zinc-500"} />
+          <X size={10} />
         </button>
-      </div>
-      <span className="text-[13px] font-medium text-zinc-600 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors">
+      )}
+
+      <span className="text-[13px] font-medium text-zinc-600 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white transition-colors text-center truncate w-full px-1">
         {app.name}
       </span>
-    </motion.a>
+    </motion.div>
   );
 };
 
@@ -159,12 +271,22 @@ export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [activeTab, setActiveTab] = useState<Category>("All Apps");
   const [apps, setApps] = useState<AppItem[]>(APPS);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Check system preference or localStorage
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) setTheme(savedTheme);
+
+    const savedApps = localStorage.getItem("customApps");
+    if (savedApps) {
+      try {
+        const customApps = JSON.parse(savedApps);
+        setApps([...APPS, ...customApps]);
+      } catch (e) {
+        console.error("Failed to parse custom apps", e);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -177,9 +299,28 @@ export default function Home() {
   }, [theme]);
 
   const toggleFavorite = (id: string) => {
-    setApps(prev => prev.map(app =>
+    const updatedApps = apps.map(app =>
       app.id === id ? { ...app, favorite: !app.favorite } : app
-    ));
+    );
+    setApps(updatedApps);
+    persistCustomApps(updatedApps);
+  };
+
+  const addApp = (newApp: AppItem) => {
+    const updatedApps = [...apps, newApp];
+    setApps(updatedApps);
+    persistCustomApps(updatedApps);
+  };
+
+  const deleteApp = (id: string) => {
+    const updatedApps = apps.filter(app => app.id !== id);
+    setApps(updatedApps);
+    persistCustomApps(updatedApps);
+  };
+
+  const persistCustomApps = (allApps: AppItem[]) => {
+    const customApps = allApps.filter(app => app.id.startsWith("custom-"));
+    localStorage.setItem("customApps", JSON.stringify(customApps));
   };
 
   const filteredApps = apps.filter(app =>
@@ -218,7 +359,7 @@ export default function Home() {
           >
             {theme === "dark" ? <Sun size={20} className="text-zinc-200" /> : <Moon size={20} className="text-zinc-500" />}
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-zinc-200 group">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-white group">
             <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-sm font-medium">Logout</span>
           </button>
@@ -234,8 +375,8 @@ export default function Home() {
                 key={cat}
                 onClick={() => setActiveTab(cat)}
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${activeTab === cat
-                  ? "bg-white dark:bg-zinc-600 text-zinc-900 dark:text-white shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-300 dark:hover:text-white"
+                  ? "bg-white dark:bg-zinc-100 text-zinc-900 dark:text-zinc-900 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-white"
                   }`}
               >
                 {cat}
@@ -247,14 +388,14 @@ export default function Home() {
         {/* Favorites Section */}
         {activeTab === "All Apps" && favoriteApps.length > 0 && (
           <section className="mb-20">
-            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-zinc-300">
+            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-white">
               <Star size={18} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">Favorites</h2>
+              <h2 className="text-sm font-bold tracking-wider uppercase">Favorites</h2>
             </div>
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-10">
               <AnimatePresence>
                 {favoriteApps.map((app) => (
-                  <AppIcon key={`fav-${app.id}`} app={app} isFavoriteSection toggleFavorite={toggleFavorite} />
+                  <AppIcon key={`fav-${app.id}`} app={app} isFavoriteSection toggleFavorite={toggleFavorite} onDelete={deleteApp} />
                 ))}
               </AnimatePresence>
             </div>
@@ -265,17 +406,34 @@ export default function Home() {
         {/* All Apps Section */}
         <section>
           {activeTab === "All Apps" && (
-            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-zinc-300">
+            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-white">
               <LayoutGrid size={18} />
-              <h2 className="text-sm font-semibold tracking-wider uppercase">All Apps</h2>
+              <h2 className="text-sm font-bold tracking-wider uppercase">All Apps</h2>
             </div>
           )}
 
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-10">
+          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-12">
             <AnimatePresence mode="popLayout">
               {filteredApps.map((app) => (
-                <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} />
+                <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
               ))}
+
+              {/* Add New App Button */}
+              {activeTab === "All Apps" && (
+                <motion.div
+                  layout
+                  whileHover={{ y: -5 }}
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex flex-col items-center gap-3 cursor-pointer group"
+                >
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
+                    <Plus size={32} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
+                  </div>
+                  <span className="text-[13px] font-medium text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
+                    Add App
+                  </span>
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
         </section>
@@ -286,6 +444,12 @@ export default function Home() {
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 dark:bg-blue-600/10 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-500/5 dark:bg-purple-600/10 rounded-full blur-[120px]" />
       </div>
+
+      <AddAppModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={addApp}
+      />
     </div>
   );
 }
