@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background-dark: #12141a;
+  --color-surface-dark: #1a1c23;
+  --color-text-dark: #ffffff;
+  --color-text-muted-dark: #8a8d98;
+
+  --color-background-light: #f4f5f7;
+  --color-surface-light: #ffffff;
+  --color-text-light: #1a1c23;
+  --color-text-muted-light: #6b7280;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --background: #f4f5f7;
+  --foreground: #1a1c23;
+  --surface: #ffffff;
+  --text-muted: #6b7280;
+  --border: rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  --background: #12141a;
+  --foreground: #ffffff;
+  --surface: #1a1c23;
+  --text-muted: #8a8d98;
+  --border: rgba(255, 255, 255, 0.05);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+}
+
+.glass {
+  background: var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+.tab-active {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.app-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-card:hover {
+  transform: translateY(-4px);
+}

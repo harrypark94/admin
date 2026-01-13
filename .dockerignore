@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+*.md
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log
+README.md
+.eslintrc.json
