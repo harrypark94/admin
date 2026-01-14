@@ -18,7 +18,12 @@ import {
   Receipt,
   Plus,
   X,
-  Globe
+  Globe,
+  Sparkles,
+  Command,
+  ArrowRight,
+  MessageSquare,
+  Bot
 } from "lucide-react";
 import Image from "next/image";
 
@@ -84,8 +89,6 @@ interface AppItem {
 }
 
 // --- Data ---
-const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
-
 const APPS: AppItem[] = [
   { id: "zena", name: "ZENA", category: ["Admin"], icon: LayoutGrid, url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
@@ -98,7 +101,55 @@ const APPS: AppItem[] = [
   { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg", url: "https://meet.google.com" },
 ];
 
-// --- Components ---
+// --- Sub-Components ---
+
+const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: boolean, onClose: () => void }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 10, scale: 0.98 }}
+          className="w-full mt-4 p-6 rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group"
+        >
+          {/* Animated Background Graduate */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-pink-600/5 opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Sparkles size={16} className="text-white" />
+              </div>
+              <span className="text-sm font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-widest">Gemini Assistant</span>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-zinc-200 text-lg font-medium leading-relaxed">
+                {query ? `"${query}"에 대해 MADEONE 내부 데이터를 탐색 중입니다...` : "안녕하세요! 메이드온 도구들이나 관리 업무에 대해 궁금한 점이 있으신가요?"}
+              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {["자산 관리 가이드", "출퇴근 기록 확인", "고정비 정산 방법"].map((hint) => (
+                  <button key={hint} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all">
+                    {hint}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 const AddAppModal = ({ isOpen, onClose, onAdd }: { isOpen: boolean, onClose: () => void, onAdd: (app: AppItem) => void }) => {
   const [name, setName] = useState("");
@@ -268,7 +319,8 @@ export default function Home() {
   const { logout, user } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [activeTab, setActiveTab] = useState<Category>("All Apps");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isGeminiOpen, setIsGeminiOpen] = useState(false);
   const [apps, setApps] = useState<AppItem[]>(APPS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -323,7 +375,7 @@ export default function Home() {
   };
 
   const filteredApps = apps.filter(app =>
-    activeTab === "All Apps" || app.category.includes(activeTab)
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const favoriteApps = apps.filter(app => app.favorite);
@@ -375,26 +427,50 @@ export default function Home() {
       </header>
 
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
-        {/* Navigation Tabs */}
-        <div className="flex justify-center mb-16">
-          <div className="bg-zinc-200/50 dark:bg-zinc-800/50 backdrop-blur-md p-1.5 rounded-full flex gap-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveTab(cat)}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === cat
-                  ? "bg-white dark:bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-white"
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
+        {/* Central Command / Search Bar */}
+        <div className="max-w-2xl mx-auto mb-16 relative">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition duration-1000" />
+            <div className="relative bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[2rem] border border-black/5 dark:border-white/10 shadow-2xl flex items-center px-6 py-4 transition-all">
+              <Search className="text-zinc-400 mr-4" size={24} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.length > 0 && !isGeminiOpen) setIsGeminiOpen(false);
+                }}
+                placeholder="어떤 도구를 찾으시나요? (또는 Gemini에게 물어보기)"
+                className="w-full bg-transparent border-none outline-none text-xl font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsGeminiOpen(!isGeminiOpen)}
+                  className={`p-2.5 rounded-2xl transition-all flex items-center gap-2 ${isGeminiOpen
+                    ? "bg-gradient-to-tr from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"}`}
+                >
+                  <Sparkles size={20} />
+                  <span className="text-xs font-bold uppercase tracking-wider hidden sm:block">Gemini</span>
+                </button>
+                <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-2" />
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400">
+                  <Command size={14} />
+                  <span className="text-[10px] font-bold">K</span>
+                </div>
+              </div>
+            </div>
           </div>
+
+          <GeminiAssistant
+            query={searchQuery}
+            isOpen={isGeminiOpen || (searchQuery.length > 2 && filteredApps.length === 0)}
+            onClose={() => setIsGeminiOpen(false)}
+          />
         </div>
 
-        {/* Favorites Section */}
-        {activeTab === "All Apps" && favoriteApps.length > 0 && (
+        {/* Favorites Section - Only show when no search */}
+        {!searchQuery && favoriteApps.length > 0 && (
           <section className="mb-20">
             <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
               <Star size={18} />
@@ -413,7 +489,7 @@ export default function Home() {
 
         {/* All Apps Section */}
         <section>
-          {activeTab === "All Apps" && (
+          {!searchQuery && (
             <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
               <LayoutGrid size={18} />
               <h2 className="text-sm font-bold tracking-wider uppercase">All Apps</h2>
@@ -426,8 +502,8 @@ export default function Home() {
                 <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
               ))}
 
-              {/* Add New App Button */}
-              {activeTab === "All Apps" && (
+              {/* Add New App Button - Only show when not searching */}
+              {!searchQuery && (
                 <motion.div
                   layout
                   whileHover={{ y: -5 }}
