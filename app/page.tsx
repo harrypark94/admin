@@ -95,7 +95,6 @@ const APPS: AppItem[] = [
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
   { id: "notion", name: "Notion", category: ["Ops", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg", url: "https://notion.so", favorite: true },
   { id: "gdrive", name: "Google Drive", category: ["Ops"], icon: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg", url: "https://drive.google.com" },
-  { id: "zoom", name: "Zoom", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/94/Zoom_app_icon.png", url: "https://zoom.us", favorite: true },
   { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg", url: "https://meet.google.com" },
 ];
 
