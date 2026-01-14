@@ -259,7 +259,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         </button>
       )}
 
-      <span className="text-[13px] font-medium text-zinc-600 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white transition-colors text-center truncate w-full px-1">
+      <span className="text-sm font-medium text-zinc-400 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors text-center truncate w-full px-1">
         {app.name}
       </span>
     </motion.div>
@@ -370,7 +370,7 @@ export default function Home() {
           </button>
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-500 dark:text-white group"
+            className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors text-zinc-400 dark:text-zinc-300 group"
           >
             <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-sm font-medium">Logout</span>
@@ -386,9 +386,9 @@ export default function Home() {
               <button
                 key={cat}
                 onClick={() => setActiveTab(cat)}
-                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${activeTab === cat
-                  ? "bg-white dark:bg-zinc-100 text-zinc-900 dark:text-zinc-900 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-white"
+                className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${activeTab === cat
+                  ? "bg-white dark:bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-400 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-white"
                   }`}
               >
                 {cat}
@@ -400,7 +400,7 @@ export default function Home() {
         {/* Favorites Section */}
         {activeTab === "All Apps" && favoriteApps.length > 0 && (
           <section className="mb-20">
-            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-white">
+            <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
               <Star size={18} />
               <h2 className="text-sm font-bold tracking-wider uppercase">Favorites</h2>
             </div>
@@ -418,7 +418,7 @@ export default function Home() {
         {/* All Apps Section */}
         <section>
           {activeTab === "All Apps" && (
-            <div className="flex items-center gap-2 mb-8 text-zinc-500 dark:text-white">
+            <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
               <LayoutGrid size={18} />
               <h2 className="text-sm font-bold tracking-wider uppercase">All Apps</h2>
             </div>
