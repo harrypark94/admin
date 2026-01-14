@@ -209,21 +209,21 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         href={app.url || "#"}
         target={app.url ? "_blank" : undefined}
         rel={app.url ? "noopener noreferrer" : undefined}
-        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-white rounded-[2rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.15)] flex items-center justify-center p-4 sm:p-5 overflow-hidden border border-black/5 transition-all group-hover:scale-105 group-hover:shadow-xl"
+        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-[1.8rem] shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] dark:shadow-[0_15px_40px_rgb(0,0,0,0.4)] flex items-center justify-center overflow-hidden border border-white/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-active:scale-95"
       >
         {!imgError && typeof Icon === "string" ? (
           <img
             src={Icon}
             alt={app.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-zinc-50 rounded-lg">
+          <div className="w-full h-full flex items-center justify-center bg-zinc-800 dark:bg-zinc-800">
             {typeof Icon === "function" ? (
-              <Icon className="w-8 h-8 text-zinc-400" />
+              <Icon className="w-10 h-10 text-zinc-400" />
             ) : (
-              <Globe className="w-8 h-8 text-zinc-300" />
+              <Globe className="w-10 h-10 text-zinc-300" />
             )}
           </div>
         )}
