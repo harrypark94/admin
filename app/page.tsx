@@ -93,9 +93,6 @@ const APPS: AppItem[] = [
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
   { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket.madeone.kr", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
-  { id: "notion", name: "Notion", category: ["Ops", "Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Notion-logo.svg", url: "https://notion.so", favorite: true },
-  { id: "gdrive", name: "Google Drive", category: ["Ops"], icon: "https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg", url: "https://drive.google.com" },
-  { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg", url: "https://meet.google.com" },
 ];
 
 // --- Components ---
@@ -209,7 +206,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         href={app.url || "#"}
         target={app.url ? "_blank" : undefined}
         rel={app.url ? "noopener noreferrer" : undefined}
-        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-[1.8rem] shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] dark:shadow-[0_15px_40px_rgb(0,0,0,0.4)] flex items-center justify-center overflow-hidden border border-white/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-active:scale-95"
+        className="relative w-[72px] h-[72px] sm:w-[86px] sm:h-[86px] md:w-[100px] md:h-[100px] rounded-[1.6rem] shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] dark:shadow-[0_15px_40px_rgb(0,0,0,0.4)] flex items-center justify-center overflow-hidden border border-white/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-active:scale-95"
       >
         {!imgError && typeof Icon === "string" ? (
           <img
@@ -374,7 +371,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
+      <main className="pt-44 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
         {/* Search Bar */}
         <div className="flex justify-center mb-16 px-4">
           <div className="relative w-full max-w-xl group">
@@ -441,7 +438,7 @@ export default function Home() {
                   onClick={() => setIsAddModalOpen(true)}
                   className="flex flex-col items-center gap-3 cursor-pointer group"
                 >
-                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-zinc-100 dark:bg-zinc-800/50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
+                  <div className="relative w-[72px] h-[72px] sm:w-[86px] sm:h-[86px] md:w-[100px] md:h-[100px] bg-zinc-100 dark:bg-zinc-800/50 rounded-[1.6rem] flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
                     <Plus size={32} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
                   </div>
                   <span className="text-base font-semibold text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
