@@ -347,7 +347,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="hidden md:block">
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
           <WeatherWidget />
         </div>
 
