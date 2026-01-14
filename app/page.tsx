@@ -104,7 +104,7 @@ const APPS: AppItem[] = [
 
 // --- Sub-Components ---
 
-const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: boolean, onClose: () => void }) => {
+const GeminiAssistant = ({ query, isOpen, onClose, onSuggestionClick }: { query: string, isOpen: boolean, onClose: () => void, onSuggestionClick: (q: string) => void }) => {
   const [response, setResponse] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
 
@@ -168,7 +168,11 @@ const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: bo
               {!response && !isTyping && (
                 <div className="flex flex-wrap gap-2">
                   {["오늘 점심 메뉴 추천해줘", "자산 관리 메뉴얼 보여줘", "휴가 신청은 어디서 해?"].map((hint) => (
-                    <button key={hint} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all">
+                    <button
+                      key={hint}
+                      onClick={() => onSuggestionClick(hint)}
+                      className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all"
+                    >
                       {hint}
                     </button>
                   ))}
@@ -508,6 +512,10 @@ export default function Home() {
             query={searchQuery}
             isOpen={isGeminiOpen || (searchQuery.length > 2 && filteredApps.length === 0)}
             onClose={() => setIsGeminiOpen(false)}
+            onSuggestionClick={(q) => {
+              setSearchQuery(q);
+              setIsGeminiOpen(true);
+            }}
           />
         </div>
 
