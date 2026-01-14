@@ -18,15 +18,9 @@ import {
   Receipt,
   Plus,
   X,
-  Globe,
-  Sparkles,
-  Command,
-  ArrowRight,
-  MessageSquare,
-  Bot
+  Globe
 } from "lucide-react";
 import Image from "next/image";
-import { getGeminiResponse } from "@/lib/gemini";
 
 // --- Components ---
 
@@ -90,6 +84,8 @@ interface AppItem {
 }
 
 // --- Data ---
+const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
+
 const APPS: AppItem[] = [
   { id: "zena", name: "ZENA", category: ["Admin"], icon: LayoutGrid, url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
@@ -102,96 +98,7 @@ const APPS: AppItem[] = [
   { id: "meet", name: "Google Meet", category: ["Communication"], icon: "https://upload.wikimedia.org/wikipedia/commons/9/9b/Google_Meet_icon_%282020%29.svg", url: "https://meet.google.com" },
 ];
 
-// --- Sub-Components ---
-
-const GeminiAssistant = ({ query, isOpen, onClose, onSuggestionClick }: { query: string, isOpen: boolean, onClose: () => void, onSuggestionClick: (q: string) => void }) => {
-  const [response, setResponse] = useState<string>("");
-  const [isTyping, setIsTyping] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && query && query.length > 2) {
-      const timer = setTimeout(async () => {
-        setIsTyping(true);
-        setResponse("");
-        const res = await getGeminiResponse(query);
-        setResponse(res);
-        setIsTyping(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, query]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 10, scale: 0.98 }}
-          className="w-full mt-4 p-6 rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group min-h-[200px]"
-        >
-          {/* Animated Background Graduate */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-pink-600/5 opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
-
-          <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Sparkles size={16} className="text-white" />
-              </div>
-              <span className="text-sm font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-widest">Gemini Assistant</span>
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex gap-1 ml-2"
-                >
-                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" />
-                </motion.div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              <div className="text-zinc-200 text-lg font-medium leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar">
-                {isTyping ? (
-                  <span className="text-zinc-500 italic">Thinking...</span>
-                ) : response ? (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="whitespace-pre-wrap">
-                    {response}
-                  </motion.div>
-                ) : (
-                  <p>{query ? `"${query}"에 대해 질문하시겠어요? Enter를 눌러 대화를 시작하세요.` : "안녕하세요! 메이드온 업무나 도구들에 대해 무엇이든 물어보세요."}</p>
-                )}
-              </div>
-
-              {!response && !isTyping && (
-                <div className="flex flex-wrap gap-2">
-                  {["오늘 점심 메뉴 추천해줘", "자산 관리 메뉴얼 보여줘", "휴가 신청은 어디서 해?"].map((hint) => (
-                    <button
-                      key={hint}
-                      onClick={() => onSuggestionClick(hint)}
-                      className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all"
-                    >
-                      {hint}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
+// --- Components ---
 
 const AddAppModal = ({ isOpen, onClose, onAdd }: { isOpen: boolean, onClose: () => void, onAdd: (app: AppItem) => void }) => {
   const [name, setName] = useState("");
@@ -362,7 +269,6 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isGeminiOpen, setIsGeminiOpen] = useState(false);
   const [apps, setApps] = useState<AppItem[]>(APPS);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
@@ -469,57 +375,32 @@ export default function Home() {
       </header>
 
       <main className="pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
-        {/* Central Command / Search Bar */}
-        <div className="max-w-2xl mx-auto mb-16 relative">
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 rounded-[2rem] blur-xl opacity-0 group-focus-within:opacity-100 transition duration-1000" />
-            <div className="relative bg-white/80 dark:bg-zinc-900/60 backdrop-blur-2xl rounded-[2rem] border border-black/5 dark:border-white/10 shadow-2xl flex items-center px-6 py-4 transition-all">
-              <Search className="text-zinc-400 mr-4" size={24} />
+        {/* Search Bar */}
+        <div className="flex justify-center mb-16 px-4">
+          <div className="relative w-full max-w-xl group">
+            <div className="absolute inset-0 bg-zinc-900/5 dark:bg-white/5 blur-xl group-focus-within:bg-blue-500/10 transition-all rounded-full" />
+            <div className="relative flex items-center bg-white/70 dark:bg-zinc-800/50 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl px-6 py-4 shadow-sm transition-all group-focus-within:border-blue-500/50 group-focus-within:shadow-lg group-focus-within:scale-[1.02]">
+              <Search className="text-zinc-400 dark:text-zinc-500" size={20} />
               <input
                 type="text"
                 value={searchQuery}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && searchQuery.length > 0) {
-                    setIsGeminiOpen(true);
-                  }
-                }}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                }}
-                placeholder="어떤 도구를 찾으시나요? (또는 Gemini에게 물어보기)"
-                className="w-full bg-transparent border-none outline-none text-xl font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search for apps..."
+                className="w-full bg-transparent border-none outline-none px-4 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium"
               />
-              <div className="flex items-center gap-2">
+              {searchQuery && (
                 <button
-                  onClick={() => setIsGeminiOpen(!isGeminiOpen)}
-                  className={`p-2.5 rounded-2xl transition-all flex items-center gap-2 ${isGeminiOpen
-                    ? "bg-gradient-to-tr from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/25"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-white"}`}
+                  onClick={() => setSearchQuery("")}
+                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
                 >
-                  <Sparkles size={20} />
-                  <span className="text-xs font-bold uppercase tracking-wider hidden sm:block">Gemini</span>
+                  <X size={16} className="text-zinc-400" />
                 </button>
-                <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-2" />
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-400">
-                  <Command size={14} />
-                  <span className="text-[10px] font-bold">K</span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
-
-          <GeminiAssistant
-            query={searchQuery}
-            isOpen={isGeminiOpen || (searchQuery.length > 2 && filteredApps.length === 0)}
-            onClose={() => setIsGeminiOpen(false)}
-            onSuggestionClick={(q) => {
-              setSearchQuery(q);
-              setIsGeminiOpen(true);
-            }}
-          />
         </div>
 
-        {/* Favorites Section - Only show when no search */}
+        {/* Favorites Section */}
         {!searchQuery && favoriteApps.length > 0 && (
           <section className="mb-20">
             <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
@@ -539,12 +420,12 @@ export default function Home() {
 
         {/* All Apps Section */}
         <section>
-          {!searchQuery && (
-            <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
-              <LayoutGrid size={18} />
-              <h2 className="text-sm font-bold tracking-wider uppercase">All Apps</h2>
-            </div>
-          )}
+          <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
+            <LayoutGrid size={18} />
+            <h2 className="text-sm font-bold tracking-wider uppercase">
+              {searchQuery ? "Search Results" : "All Apps"}
+            </h2>
+          </div>
 
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-12">
             <AnimatePresence mode="popLayout">
@@ -552,7 +433,7 @@ export default function Home() {
                 <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
               ))}
 
-              {/* Add New App Button - Only show when not searching */}
+              {/* Add New App Button */}
               {!searchQuery && (
                 <motion.div
                   layout
