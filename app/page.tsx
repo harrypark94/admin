@@ -26,6 +26,7 @@ import {
   Bot
 } from "lucide-react";
 import Image from "next/image";
+import { getGeminiResponse } from "@/lib/gemini";
 
 // --- Components ---
 
@@ -104,6 +105,22 @@ const APPS: AppItem[] = [
 // --- Sub-Components ---
 
 const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: boolean, onClose: () => void }) => {
+  const [response, setResponse] = useState<string>("");
+  const [isTyping, setIsTyping] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && query && query.length > 2) {
+      const timer = setTimeout(async () => {
+        setIsTyping(true);
+        setResponse("");
+        const res = await getGeminiResponse(query);
+        setResponse(res);
+        setIsTyping(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, query]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -111,7 +128,7 @@ const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: bo
           initial={{ opacity: 0, y: 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.98 }}
-          className="w-full mt-4 p-6 rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group"
+          className="w-full mt-4 p-6 rounded-3xl bg-zinc-900/50 backdrop-blur-xl border border-white/10 shadow-2xl relative overflow-hidden group min-h-[200px]"
         >
           {/* Animated Background Graduate */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 via-purple-600/5 to-pink-600/5 opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
@@ -122,20 +139,41 @@ const GeminiAssistant = ({ query, isOpen, onClose }: { query: string, isOpen: bo
                 <Sparkles size={16} className="text-white" />
               </div>
               <span className="text-sm font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent uppercase tracking-widest">Gemini Assistant</span>
+              {isTyping && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex gap-1 ml-2"
+                >
+                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <span className="w-1 h-1 bg-blue-400 rounded-full animate-bounce" />
+                </motion.div>
+              )}
             </div>
 
             <div className="space-y-4">
-              <p className="text-zinc-200 text-lg font-medium leading-relaxed">
-                {query ? `"${query}"에 대해 MADEONE 내부 데이터를 탐색 중입니다...` : "안녕하세요! 메이드온 도구들이나 관리 업무에 대해 궁금한 점이 있으신가요?"}
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-                {["자산 관리 가이드", "출퇴근 기록 확인", "고정비 정산 방법"].map((hint) => (
-                  <button key={hint} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all">
-                    {hint}
-                  </button>
-                ))}
+              <div className="text-zinc-200 text-lg font-medium leading-relaxed max-h-[400px] overflow-y-auto custom-scrollbar">
+                {isTyping ? (
+                  <span className="text-zinc-500 italic">Thinking...</span>
+                ) : response ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="whitespace-pre-wrap">
+                    {response}
+                  </motion.div>
+                ) : (
+                  <p>{query ? `"${query}"에 대해 질문하시겠어요? Enter를 눌러 대화를 시작하세요.` : "안녕하세요! 메이드온 업무나 도구들에 대해 무엇이든 물어보세요."}</p>
+                )}
               </div>
+
+              {!response && !isTyping && (
+                <div className="flex flex-wrap gap-2">
+                  {["오늘 점심 메뉴 추천해줘", "자산 관리 메뉴얼 보여줘", "휴가 신청은 어디서 해?"].map((hint) => (
+                    <button key={hint} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 text-xs hover:bg-white/10 hover:text-white transition-all">
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -436,9 +474,13 @@ export default function Home() {
               <input
                 type="text"
                 value={searchQuery}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.length > 0) {
+                    setIsGeminiOpen(true);
+                  }
+                }}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  if (e.target.value.length > 0 && !isGeminiOpen) setIsGeminiOpen(false);
                 }}
                 placeholder="어떤 도구를 찾으시나요? (또는 Gemini에게 물어보기)"
                 className="w-full bg-transparent border-none outline-none text-xl font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
