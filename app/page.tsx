@@ -209,7 +209,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         href={app.url || "#"}
         target={app.url ? "_blank" : undefined}
         rel={app.url ? "noopener noreferrer" : undefined}
-        className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center justify-center p-3 sm:p-4 overflow-hidden border border-black/5 transition-all group-hover:scale-105 group-hover:shadow-lg"
+        className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-white rounded-[2rem] shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.15)] flex items-center justify-center p-4 sm:p-5 overflow-hidden border border-black/5 transition-all group-hover:scale-105 group-hover:shadow-xl"
       >
         {!imgError && typeof Icon === "string" ? (
           <img
@@ -255,7 +255,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         </button>
       )}
 
-      <span className="text-sm font-medium text-zinc-400 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors text-center truncate w-full px-1">
+      <span className="text-base font-semibold text-zinc-400 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-white transition-colors text-center truncate w-full px-1">
         {app.name}
       </span>
     </motion.div>
@@ -407,7 +407,7 @@ export default function Home() {
               <Star size={18} />
               <h2 className="text-sm font-bold tracking-wider uppercase">Favorites</h2>
             </div>
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-10">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
               <AnimatePresence>
                 {favoriteApps.map((app) => (
                   <AppIcon key={`fav-${app.id}`} app={app} isFavoriteSection toggleFavorite={toggleFavorite} onDelete={deleteApp} />
@@ -427,7 +427,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-x-4 gap-y-12">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
             <AnimatePresence mode="popLayout">
               {filteredApps.map((app) => (
                 <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
@@ -441,10 +441,10 @@ export default function Home() {
                   onClick={() => setIsAddModalOpen(true)}
                   className="flex flex-col items-center gap-3 cursor-pointer group"
                 >
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-zinc-100 dark:bg-zinc-800/50 rounded-2xl flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-zinc-100 dark:bg-zinc-800/50 rounded-[2rem] flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
                     <Plus size={32} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
                   </div>
-                  <span className="text-[13px] font-medium text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
+                  <span className="text-base font-semibold text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
                     Add App
                   </span>
                 </motion.div>
