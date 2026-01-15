@@ -21,6 +21,28 @@ import {
   Globe
 } from "lucide-react";
 import Image from "next/image";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  DropAnimation
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useAuth } from "@/components/AuthProvider";
 
 // --- Components ---
 
@@ -93,6 +115,7 @@ const APPS: AppItem[] = [
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
   { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket.madeone.kr", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
+  { id: "kpop", name: "아티스트", category: ["Admin"], icon: "/icon_kpop.png", url: "https://kpop-dashboard-370510687216.asia-northeast3.run.app", favorite: true },
 ];
 
 // --- Components ---
@@ -194,7 +217,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
 
   return (
     <motion.div
-      layout
+      layout={false} // Disable framer-motion layout during drag
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
@@ -206,17 +229,19 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
         href={app.url || "#"}
         target={app.url ? "_blank" : undefined}
         rel={app.url ? "noopener noreferrer" : undefined}
+        draggable={false}
         className="relative w-[72px] h-[72px] sm:w-[86px] sm:h-[86px] md:w-[100px] md:h-[100px] rounded-[1.6rem] shadow-[0_10px_30px_-5px_rgba(0,0,0,0.3)] dark:shadow-[0_15px_40px_rgb(0,0,0,0.4)] flex items-center justify-center overflow-hidden border border-white/10 transition-all duration-300 group-hover:scale-105 group-hover:shadow-2xl group-active:scale-95"
       >
         {!imgError && typeof Icon === "string" ? (
           <img
             src={Icon}
             alt={app.name}
+            draggable={false}
             className="w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-zinc-800 dark:bg-zinc-800">
+          <div className="w-full h-full flex items-center justify-center bg-zinc-800 dark:bg-zinc-800" onPointerDownCapture={(e) => e.stopPropagation()}>
             {typeof Icon === "function" ? (
               <Icon className="w-10 h-10 text-zinc-400" />
             ) : (
@@ -259,7 +284,41 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
   );
 };
 
-import { useAuth } from "@/components/AuthProvider";
+const SortableAppIcon = ({ app, id, toggleFavorite, onDelete }: { app: AppItem, id: string, toggleFavorite: (id: string) => void, onDelete?: (id: string) => void }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: id, data: { app } });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1, // Dim the original item while dragging
+    zIndex: isDragging ? 50 : "auto",
+    position: "relative" as const,
+    touchAction: "none",
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <AppIcon app={app} isFavoriteSection={id.startsWith('fav-')} toggleFavorite={toggleFavorite} onDelete={onDelete} />
+    </div>
+  );
+};
+
+const dropAnimation: DropAnimation = {
+  sideEffects: defaultDropAnimationSideEffects({
+    styles: {
+      active: {
+        opacity: '0.4',
+      },
+    },
+  }),
+};
 
 export default function Home() {
   const { logout, user } = useAuth();
@@ -267,22 +326,87 @@ export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [searchQuery, setSearchQuery] = useState("");
   const [apps, setApps] = useState<AppItem[]>(APPS);
+  const [favAppsOrder, setFavAppsOrder] = useState<string[]>([]); // Array of App IDs
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  // DnD Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) setTheme(savedTheme);
 
-    const savedApps = localStorage.getItem("customApps");
-    if (savedApps) {
+    const savedAppsStr = localStorage.getItem("customApps");
+    const savedOrderStr = localStorage.getItem("appOrder");
+    const savedFavOrderStr = localStorage.getItem("favAppOrder");
+
+    let currentApps = [...APPS];
+
+    if (savedAppsStr) {
       try {
-        const customApps = JSON.parse(savedApps);
-        setApps([...APPS, ...customApps]);
+        const customApps = JSON.parse(savedAppsStr);
+        currentApps = [...currentApps, ...customApps];
       } catch (e) {
         console.error("Failed to parse custom apps", e);
       }
     }
+
+    // Restore App Order
+    if (savedOrderStr) {
+      try {
+        const order = JSON.parse(savedOrderStr) as string[];
+        const appMap = new Map(currentApps.map(app => [app.id, app]));
+        const orderedApps: AppItem[] = [];
+        const seenIds = new Set<string>();
+
+        order.forEach(id => {
+          const app = appMap.get(id);
+          if (app) {
+            orderedApps.push(app);
+            seenIds.add(id);
+          }
+        });
+
+        currentApps.forEach(app => {
+          if (!seenIds.has(app.id)) {
+            orderedApps.push(app);
+          }
+        });
+
+        setApps(orderedApps);
+      } catch (e) {
+        setApps(currentApps);
+      }
+    } else {
+      setApps(currentApps);
+    }
+
+    // Restore Favorites Order
+    const currentFavorites = currentApps.filter(app => app.favorite).map(app => app.id);
+    if (savedFavOrderStr) {
+      try {
+        const savedFavOrder = JSON.parse(savedFavOrderStr) as string[];
+        const validFavOrder = savedFavOrder.filter(id => currentFavorites.includes(id));
+        const newFavs = currentFavorites.filter(id => !validFavOrder.includes(id));
+        setFavAppsOrder([...validFavOrder, ...newFavs]);
+      } catch (e) {
+        setFavAppsOrder(currentFavorites);
+      }
+    } else {
+      setFavAppsOrder(currentFavorites);
+    }
+
   }, []);
 
   useEffect(() => {
@@ -294,24 +418,98 @@ export default function Home() {
     localStorage.setItem("theme", theme);
   }, [theme]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over) return;
+
+    const activeIdStr = active.id as string;
+    const overIdStr = over.id as string;
+
+    if (activeIdStr === overIdStr) return;
+
+    // Check if handling Favorites (prefix 'fav-')
+    if (activeIdStr.startsWith('fav-') && overIdStr.startsWith('fav-')) {
+      setFavAppsOrder((items) => {
+        const oldIndex = items.findIndex(id => `fav-${id}` === activeIdStr);
+        const newIndex = items.findIndex(id => `fav-${id}` === overIdStr);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(items, oldIndex, newIndex);
+          localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
+          return newOrder;
+        }
+        return items;
+      });
+    }
+    // Check if handling All Apps (no prefix or prefix 'app-')
+    else if (!activeIdStr.startsWith('fav-') && !overIdStr.startsWith('fav-')) {
+      setApps((items) => {
+        const oldIndex = items.findIndex((item) => item.id === activeIdStr);
+        const newIndex = items.findIndex((item) => item.id === overIdStr);
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+
+        const orderIds = newOrder.map(app => app.id);
+        localStorage.setItem("appOrder", JSON.stringify(orderIds));
+
+        return newOrder;
+      });
+    }
+  };
+
   const toggleFavorite = (id: string) => {
     const updatedApps = apps.map(app =>
       app.id === id ? { ...app, favorite: !app.favorite } : app
     );
     setApps(updatedApps);
     persistCustomApps(updatedApps);
+
+    const app = updatedApps.find(a => a.id === id);
+    if (app) {
+      if (app.favorite) {
+        setFavAppsOrder(prev => {
+          const newOrder = [...prev, id];
+          localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
+          return newOrder;
+        });
+      } else {
+        setFavAppsOrder(prev => {
+          const newOrder = prev.filter(favId => favId !== id);
+          localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
+          return newOrder;
+        });
+      }
+    }
   };
 
   const addApp = (newApp: AppItem) => {
     const updatedApps = [...apps, newApp];
     setApps(updatedApps);
     persistCustomApps(updatedApps);
+
+    // Also update order
+    const orderIds = updatedApps.map(app => app.id);
+    localStorage.setItem("appOrder", JSON.stringify(orderIds));
   };
 
   const deleteApp = (id: string) => {
     const updatedApps = apps.filter(app => app.id !== id);
     setApps(updatedApps);
     persistCustomApps(updatedApps);
+
+    const orderIds = updatedApps.map(app => app.id);
+    localStorage.setItem("appOrder", JSON.stringify(orderIds));
+
+    setFavAppsOrder(prev => {
+      const newOrder = prev.filter(favId => favId !== id);
+      localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
+      return newOrder;
+    });
   };
 
   const persistCustomApps = (allApps: AppItem[]) => {
@@ -323,7 +521,16 @@ export default function Home() {
     app.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const favoriteApps = apps.filter(app => app.favorite);
+  const favoriteAppsOrdered = favAppsOrder
+    .map(id => apps.find(app => app.id === id))
+    .filter((app): app is AppItem => !!app);
+
+  // Identify Dragged Item
+  const activeApp = activeId
+    ? (activeId.startsWith('fav-')
+      ? apps.find(a => `fav-${a.id}` === activeId)
+      : apps.find(a => a.id === activeId))
+    : null;
 
   if (!mounted) return null;
 
@@ -372,83 +579,127 @@ export default function Home() {
       </header>
 
       <main className="pt-44 pb-20 px-6 md:px-12 max-w-7xl mx-auto">
-        {/* Search Bar */}
-        <div className="flex justify-center mb-16 px-4">
-          <div className="relative w-full max-w-xl group">
-            <div className="absolute inset-0 bg-zinc-900/5 dark:bg-white/5 blur-xl group-focus-within:bg-blue-500/10 transition-all rounded-full" />
-            <div className="relative flex items-center bg-white/70 dark:bg-zinc-800/50 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl px-6 py-4 shadow-sm transition-all group-focus-within:border-blue-500/50 group-focus-within:shadow-lg group-focus-within:scale-[1.02]">
-              <Search className="text-zinc-400 dark:text-zinc-500" size={20} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for apps..."
-                className="w-full bg-transparent border-none outline-none px-4 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
-                >
-                  <X size={16} className="text-zinc-400" />
-                </button>
-              )}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          {/* Search Bar */}
+          <div className="flex justify-center mb-16 px-4">
+            <div className="relative w-full max-w-xl group">
+              <div className="absolute inset-0 bg-zinc-900/5 dark:bg-white/5 blur-xl group-focus-within:bg-blue-500/10 transition-all rounded-full" />
+              <div className="relative flex items-center bg-white/70 dark:bg-zinc-800/50 backdrop-blur-xl border border-zinc-200 dark:border-white/10 rounded-2xl px-6 py-4 shadow-sm transition-all group-focus-within:border-blue-500/50 group-focus-within:shadow-lg group-focus-within:scale-[1.02]">
+                <Search className="text-zinc-400 dark:text-zinc-500" size={20} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search for apps..."
+                  className="w-full bg-transparent border-none outline-none px-4 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 font-medium"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+                  >
+                    <X size={16} className="text-zinc-400" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Favorites Section */}
-        {!searchQuery && favoriteApps.length > 0 && (
-          <section className="mb-20">
+          {/* Favorites Section */}
+          {!searchQuery && favoriteAppsOrdered.length > 0 && (
+            <section className="mb-20">
+              <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
+                <Star size={18} />
+                <h2 className="text-sm font-bold tracking-wider uppercase">Favorites</h2>
+              </div>
+
+              <SortableContext
+                items={favoriteAppsOrdered.map(a => `fav-${a.id}`)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
+                  {favoriteAppsOrdered.map((app) => (
+                    <SortableAppIcon
+                      key={`fav-${app.id}`}
+                      id={`fav-${app.id}`}
+                      app={app}
+                      toggleFavorite={toggleFavorite}
+                      onDelete={deleteApp}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <div className="h-px bg-zinc-200 dark:bg-zinc-800 mt-16" />
+            </section>
+          )}
+
+          {/* All Apps Section */}
+          <section>
             <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
-              <Star size={18} />
-              <h2 className="text-sm font-bold tracking-wider uppercase">Favorites</h2>
+              <LayoutGrid size={18} />
+              <h2 className="text-sm font-bold tracking-wider uppercase">
+                {searchQuery ? "Search Results" : "All Apps"}
+              </h2>
             </div>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
-              <AnimatePresence>
-                {favoriteApps.map((app) => (
-                  <AppIcon key={`fav-${app.id}`} app={app} isFavoriteSection toggleFavorite={toggleFavorite} onDelete={deleteApp} />
-                ))}
-              </AnimatePresence>
-            </div>
-            <div className="h-px bg-zinc-200 dark:bg-zinc-800 mt-16" />
+
+            {!searchQuery ? (
+              <SortableContext
+                items={filteredApps.map(a => a.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
+                  {filteredApps.map((app) => (
+                    <SortableAppIcon
+                      key={app.id}
+                      id={app.id}
+                      app={app}
+                      toggleFavorite={toggleFavorite}
+                      onDelete={deleteApp}
+                    />
+                  ))}
+
+                  <motion.div
+                    layout
+                    whileHover={{ y: -5 }}
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="flex flex-col items-center gap-3 cursor-pointer group"
+                  >
+                    <div className="relative w-[72px] h-[72px] sm:w-[86px] sm:h-[86px] md:w-[100px] md:h-[100px] bg-zinc-100 dark:bg-zinc-800/50 rounded-[1.6rem] flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
+                      <Plus size={32} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
+                    </div>
+                    <span className="text-base font-semibold text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
+                      Add App
+                    </span>
+                  </motion.div>
+                </div>
+              </SortableContext>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
+                <AnimatePresence mode="popLayout">
+                  {filteredApps.map((app) => (
+                    <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
           </section>
-        )}
 
-        {/* All Apps Section */}
-        <section>
-          <div className="flex items-center gap-2 mb-8 text-zinc-400 dark:text-zinc-300">
-            <LayoutGrid size={18} />
-            <h2 className="text-sm font-bold tracking-wider uppercase">
-              {searchQuery ? "Search Results" : "All Apps"}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-8 gap-y-16">
-            <AnimatePresence mode="popLayout">
-              {filteredApps.map((app) => (
-                <AppIcon key={app.id} app={app} toggleFavorite={toggleFavorite} onDelete={deleteApp} />
-              ))}
-
-              {/* Add New App Button */}
-              {!searchQuery && (
-                <motion.div
-                  layout
-                  whileHover={{ y: -5 }}
-                  onClick={() => setIsAddModalOpen(true)}
-                  className="flex flex-col items-center gap-3 cursor-pointer group"
-                >
-                  <div className="relative w-[72px] h-[72px] sm:w-[86px] sm:h-[86px] md:w-[100px] md:h-[100px] bg-zinc-100 dark:bg-zinc-800/50 rounded-[1.6rem] flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 transition-all group-hover:border-zinc-500 dark:group-hover:border-zinc-500 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-800">
-                    <Plus size={32} className="text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
-                  </div>
-                  <span className="text-base font-semibold text-zinc-500 dark:text-white group-hover:text-zinc-900 dark:group-hover:text-white">
-                    Add App
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeApp ? (
+              <AppIcon
+                app={activeApp}
+                isFavoriteSection={activeId?.startsWith('fav-')}
+                toggleFavorite={toggleFavorite}
+                onDelete={deleteApp}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </main>
 
       {/* Decorative Blur Backgrounds */}
