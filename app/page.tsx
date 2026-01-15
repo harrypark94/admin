@@ -109,7 +109,7 @@ interface AppItem {
 const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
 
 const APPS: AppItem[] = [
-  { id: "zena", name: "ZENA", category: ["Admin"], icon: "/icon_zena.png", url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
+  { id: "zena", name: "JENA", category: ["Admin"], icon: "/icon_zena.png", url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
   { id: "commute", name: "출퇴근", category: ["Admin"], icon: "/icon_commute.png", url: "https://hr.madeone.kr", favorite: true },
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
