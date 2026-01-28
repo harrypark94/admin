@@ -109,7 +109,9 @@ interface AppItem {
 const CATEGORIES: Category[] = ["All Apps", "Design", "Ops", "Dev", "Communication", "Admin"];
 
 const APPS: AppItem[] = [
-  { id: "zena", name: "JENA", category: ["Admin"], icon: "/icon_zena.png", url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
+  { id: "zena", name: "JENA", category: ["Admin"], icon: "https://zena-admin-699782049978.asia-northeast3.run.app/logo.png", url: "https://zena-admin-699782049978.asia-northeast3.run.app/", favorite: true },
+  { id: "tour", name: "투어 대시보드", category: ["Admin"], icon: "https://waterbomb-tour-dashboard.web.app/favicon.ico", url: "https://waterbomb-tour-dashboard.web.app/", favorite: true },
+  { id: "worker", name: "근로자 관리", category: ["Admin"], icon: "https://worker-management-nmrywvqllq-du.a.run.app/favicon.ico", url: "https://worker-management-nmrywvqllq-du.a.run.app/admin/login", favorite: true },
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
   { id: "commute", name: "출퇴근", category: ["Admin"], icon: "/icon_commute.png", url: "https://hr.madeone.kr", favorite: true },
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
@@ -124,23 +126,28 @@ const AddAppModal = ({ isOpen, onClose, onAdd }: { isOpen: boolean, onClose: () 
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
 
-    let domain = url;
+    let finalUrl = url.startsWith("http") ? url : `https://${url}`;
+
+    // Fetch best icon through our proxy API
+    let iconUrl = `https://www.google.com/s2/favicons?domain=${new URL(finalUrl).hostname}&sz=128`;
     try {
-      domain = new URL(url.startsWith("http") ? url : `https://${url}`).hostname;
-    } catch {
-      domain = url;
+      const res = await fetch(`/api/icon?url=${encodeURIComponent(finalUrl)}`);
+      const data = await res.json();
+      if (data.icon) iconUrl = data.icon;
+    } catch (err) {
+      console.error("Failed to fetch custom icon", err);
     }
 
     const newApp: AppItem = {
       id: `custom-${Date.now()}`,
       name,
-      url: url.startsWith("http") ? url : `https://${url}`,
+      url: finalUrl,
       category: ["All Apps" as Category],
-      icon: `https://www.google.com/s2/favicons?domain=${domain}&sz=128`,
+      icon: iconUrl,
       favorite: false
     };
 
