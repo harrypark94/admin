@@ -118,7 +118,7 @@ const APPS: AppItem[] = [
   { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket-dashboard-291463553101.asia-northeast3.run.app/", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
   { id: "kpop", name: "아티스트", category: ["Admin"], icon: "/icon_kpop.png", url: "https://kpop-dashboard-370510687216.asia-northeast3.run.app", favorite: true },
-  { id: "marketing", name: "마케팅", category: ["Admin"], icon: ShoppingBag, url: "https://script.google.com/macros/s/AKfycbwaaA5fhmo2AEwzUujxrxrNsvtHIigo9LYPuVRAFIF4UjW11mOsqoZVVToUjSZ5W8te/exec", favorite: true },
+  { id: "marketing", name: "마케팅", category: ["Admin"], icon: "/icon_marketing.png", url: "https://script.google.com/macros/s/AKfycbwaaA5fhmo2AEwzUujxrxrNsvtHIigo9LYPuVRAFIF4UjW11mOsqoZVVToUjSZ5W8te/exec", favorite: true },
 ];
 
 // --- Components ---
