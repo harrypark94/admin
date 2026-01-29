@@ -245,7 +245,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
             src={Icon}
             alt={app.name}
             draggable={false}
-            className="w-full h-full object-cover scale-[1.4]"
+            className="w-full h-full object-cover scale-[1.1]"
             onError={() => setImgError(true)}
           />
         ) : (
