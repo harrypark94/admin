@@ -117,9 +117,165 @@ const APPS: AppItem[] = [
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
   { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket-dashboard-291463553101.asia-northeast3.run.app/", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
-  { id: "kpop", name: "아티스트", category: ["Admin"], icon: "/icon_kpop.png", url: "https://artist-dashboard-370510687216.asia-northeast1.run.app/admin/seoul", favorite: true },
+  { id: "kpop", name: "아티스트", category: ["Admin"], icon: "/icon_kpop.png", url: "https://artist.madeone.kr", favorite: true },
   { id: "marketing", name: "마케팅", category: ["Admin"], icon: "/icon_marketing.png", url: "https://script.google.com/macros/s/AKfycbwaaA5fhmo2AEwzUujxrxrNsvtHIigo9LYPuVRAFIF4UjW11mOsqoZVVToUjSZ5W8te/exec", favorite: true },
 ];
+
+const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen: boolean, onClose: () => void, onUpdateGlobalApps: () => void }) => {
+  const [activeTab, setActiveTab] = useState<"apps" | "admins">("apps");
+  const [appName, setAppName] = useState("");
+  const [appUrl, setAppUrl] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [globalApps, setGlobalApps] = useState<AppItem[]>([]);
+  const [adminList, setAdminList] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setGlobalApps(JSON.parse(localStorage.getItem("global_apps") || "[]"));
+      setAdminList(JSON.parse(localStorage.getItem("admin_list") || '["harrypark@madeone.kr"]'));
+    }
+  }, [isOpen]);
+
+  const handleAddApp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalUrl = appUrl.startsWith("http") ? appUrl : `https://${appUrl}`;
+    let fetchedIcon = "";
+
+    try {
+      const res = await fetch(`/api/icon?url=${encodeURIComponent(finalUrl)}`);
+      const data = await res.json();
+      if (data.icon) fetchedIcon = data.icon;
+    } catch (err) {
+      console.error("Failed to fetch icon", err);
+    }
+
+    const newApp: AppItem = {
+      id: `global-${Date.now()}`,
+      name: appName,
+      url: finalUrl,
+      icon: fetchedIcon || "/icon-192x192.png",
+      category: ["All Apps"],
+      favorite: true
+    };
+    const updated = [...globalApps, newApp];
+    localStorage.setItem("global_apps", JSON.stringify(updated));
+    setGlobalApps(updated);
+    setAppName(""); setAppUrl("");
+    onUpdateGlobalApps();
+  };
+
+  const handleDeleteApp = (id: string) => {
+    const updated = globalApps.filter(a => a.id !== id);
+    localStorage.setItem("global_apps", JSON.stringify(updated));
+    setGlobalApps(updated);
+    onUpdateGlobalApps();
+  };
+
+  const handleAddAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminEmail.includes("@")) return;
+    const updated = Array.from(new Set([...adminList, adminEmail]));
+    localStorage.setItem("admin_list", JSON.stringify(updated));
+    setAdminList(updated);
+    setAdminEmail("");
+  };
+
+  const handleDeleteAdmin = (email: string) => {
+    if (email === "harrypark@madeone.kr") return; // Keep super admin
+    const updated = adminList.filter(e => e !== email);
+    localStorage.setItem("admin_list", JSON.stringify(updated));
+    setAdminList(updated);
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10">
+            <div className="flex border-b border-zinc-100 dark:border-white/5">
+              <button onClick={() => setActiveTab("apps")} className={`flex-1 py-6 font-bold text-sm tracking-widest uppercase transition-all ${activeTab === "apps" ? "text-blue-500 bg-blue-50/50 dark:bg-blue-500/5" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"}`}>전사 앱 관리</button>
+              <button onClick={() => setActiveTab("admins")} className={`flex-1 py-6 font-bold text-sm tracking-widest uppercase transition-all ${activeTab === "admins" ? "text-blue-500 bg-blue-50/50 dark:bg-blue-500/5" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"}`}>관리자 권한 관리</button>
+            </div>
+
+            <div className="p-8 max-h-[70vh] overflow-y-auto">
+              {activeTab === "apps" ? (
+                <div className="space-y-8">
+                  <form onSubmit={handleAddApp} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50 dark:bg-white/5 p-6 rounded-3xl border border-zinc-100 dark:border-white/5">
+                    <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} placeholder="앱 이름" className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 dark:text-white placeholder:text-zinc-400" required />
+                    <input type="text" value={appUrl} onChange={(e) => setAppUrl(e.target.value)} placeholder="접속 주소 (예: naver.com)" className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 dark:text-white placeholder:text-zinc-400" required />
+                    <button type="submit" className="md:col-span-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-4 rounded-xl hover:opacity-90 transition-opacity">전사 필수 앱으로 추가</button>
+                  </form>
+
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-400 mb-4 px-2 tracking-widest uppercase">현재 관리중인 앱</h3>
+                      <div className="space-y-3">
+                        {/* Show hardcoded APPS first but without delete option for now */}
+                        {APPS.map(app => (
+                          <div key={`source-${app.id}`} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5 opacity-80">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-cover" alt="" /> : <Globe className="text-zinc-400" size={20} />}
+                              </div>
+                              <div>
+                                <div className="font-bold dark:text-white flex items-center gap-2">
+                                  {app.name}
+                                  <span className="text-[10px] px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded-md text-zinc-500 dark:text-zinc-400">시스템 기본</span>
+                                </div>
+                                <div className="text-xs text-zinc-500 truncate max-w-[250px]">{app.url}</div>
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Default</div>
+                          </div>
+                        ))}
+
+                        {globalApps.map(app => (
+                          <div key={app.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
+                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-cover" alt="" /> : <Globe className="text-zinc-400" size={20} />}
+                              </div>
+                              <div>
+                                <div className="font-bold dark:text-white">{app.name}</div>
+                                <div className="text-xs text-zinc-500 truncate max-w-[250px]">{app.url}</div>
+                              </div>
+                            </div>
+                            <button onClick={() => handleDeleteApp(app.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors"><X size={18} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <form onSubmit={handleAddAdmin} className="flex gap-4">
+                    <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="추가할 관리자 이메일" className="flex-1 bg-zinc-50 dark:bg-white/5 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 dark:text-white placeholder:text-zinc-400" required />
+                    <button type="submit" className="bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold px-8 rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap">관리자 추가</button>
+                  </form>
+                  <div className="space-y-3">
+                    {adminList.map(email => (
+                      <div key={email} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5">
+                        <span className="font-medium dark:text-white">{email}</span>
+                        {email !== "harrypark@madeone.kr" && (
+                          <button onClick={() => handleDeleteAdmin(email)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors"><X size={18} /></button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="p-6 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end">
+              <button onClick={onClose} className="px-8 py-3 bg-zinc-200 dark:bg-zinc-700 dark:text-white rounded-xl font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors">닫기</button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 // --- Components ---
 
@@ -249,7 +405,7 @@ const AppIcon = ({ app, isFavoriteSection = false, toggleFavorite, onDelete }: {
             onError={() => setImgError(true)}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-zinc-800 dark:bg-zinc-800" onPointerDownCapture={(e) => e.stopPropagation()}>
+          <div className="w-full h-full flex items-center justify-center bg-zinc-800 dark:bg-zinc-800">
             {typeof Icon === "function" ? (
               <Icon className="w-10 h-10 text-zinc-400" />
             ) : (
@@ -336,7 +492,109 @@ export default function Home() {
   const [apps, setApps] = useState<AppItem[]>(APPS);
   const [favAppsOrder, setFavAppsOrder] = useState<string[]>([]); // Array of App IDs
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const loadApps = () => {
+    const savedAppsStr = localStorage.getItem("customApps");
+    const savedOrderStr = localStorage.getItem("appOrder");
+    const globalAppsStr = localStorage.getItem("global_apps");
+
+    let currentApps = [...APPS];
+
+    // Load GlobalApps (Mandatory for everyone)
+    if (globalAppsStr) {
+      try {
+        const globalApps = JSON.parse(globalAppsStr);
+        currentApps = [...currentApps, ...globalApps];
+      } catch (e) {
+        console.error("Failed to parse global apps", e);
+      }
+    }
+
+    if (savedAppsStr) {
+      try {
+        const customApps = JSON.parse(savedAppsStr);
+        currentApps = [...currentApps, ...customApps];
+      } catch (e) {
+        console.error("Failed to parse custom apps", e);
+      }
+    }
+
+    // Restore Favorites States
+    const savedFavIdsStr = localStorage.getItem("favoriteIds");
+    if (savedFavIdsStr) {
+      try {
+        const favoriteIds = JSON.parse(savedFavIdsStr) as string[];
+        currentApps = currentApps.map(app => ({
+          ...app,
+          favorite: favoriteIds.includes(app.id) || app.id.startsWith("global-") // Global apps are auto-favorited
+        }));
+      } catch (e) {
+        console.error("Failed to parse favorite IDs", e);
+      }
+    } else {
+      // Default behavior for first-timers
+      currentApps = currentApps.map(app => ({
+        ...app,
+        favorite: app.favorite || app.id.startsWith("global-")
+      }));
+    }
+
+    // Restore App Order
+    let finalApps = [...currentApps];
+    if (savedOrderStr) {
+      try {
+        const order = JSON.parse(savedOrderStr) as string[];
+        const appMap = new Map(currentApps.map(app => [app.id, app]));
+        const orderedApps: AppItem[] = [];
+        const seenIds = new Set<string>();
+
+        order.forEach(id => {
+          const app = appMap.get(id);
+          if (app) {
+            // Update metadata for default and global apps from hardcoded APPS or newest global state
+            const defaultApp = APPS.find(a => a.id === id);
+            const globalApp = (JSON.parse(globalAppsStr || "[]") as AppItem[]).find(a => a.id === id);
+
+            if ((defaultApp || globalApp) && !id.startsWith("custom-")) {
+              const base = defaultApp || globalApp;
+              orderedApps.push({ ...app, ...base, favorite: app.favorite });
+            } else {
+              orderedApps.push(app);
+            }
+            seenIds.add(id);
+          }
+        });
+
+        currentApps.forEach(app => {
+          if (!seenIds.has(app.id)) {
+            orderedApps.push(app);
+          }
+        });
+        finalApps = orderedApps;
+      } catch (e) {
+        console.error("Failed to restore app order", e);
+      }
+    }
+    setApps(finalApps);
+
+    // Filter favorites
+    const currentFavorites = finalApps.filter(app => app.favorite).map(app => app.id);
+    const savedFavOrderStr = localStorage.getItem("favAppOrder");
+    if (savedFavOrderStr) {
+      try {
+        const savedFavOrder = JSON.parse(savedFavOrderStr) as string[];
+        const validFavOrder = savedFavOrder.filter(id => currentFavorites.includes(id));
+        const newFavs = currentFavorites.filter(id => !validFavOrder.includes(id));
+        setFavAppsOrder([...validFavOrder, ...newFavs]);
+      } catch (e) {
+        setFavAppsOrder(currentFavorites);
+      }
+    } else {
+      setFavAppsOrder(currentFavorites);
+    }
+  };
 
   // DnD Sensors
   const sensors = useSensors(
@@ -354,67 +612,7 @@ export default function Home() {
     setMounted(true);
     const savedTheme = localStorage.getItem("theme") as "light" | "dark";
     if (savedTheme) setTheme(savedTheme);
-
-    const savedAppsStr = localStorage.getItem("customApps");
-    const savedOrderStr = localStorage.getItem("appOrder");
-    const savedFavOrderStr = localStorage.getItem("favAppOrder");
-
-    let currentApps = [...APPS];
-
-    if (savedAppsStr) {
-      try {
-        const customApps = JSON.parse(savedAppsStr);
-        currentApps = [...currentApps, ...customApps];
-      } catch (e) {
-        console.error("Failed to parse custom apps", e);
-      }
-    }
-
-    // Restore App Order
-    if (savedOrderStr) {
-      try {
-        const order = JSON.parse(savedOrderStr) as string[];
-        const appMap = new Map(currentApps.map(app => [app.id, app]));
-        const orderedApps: AppItem[] = [];
-        const seenIds = new Set<string>();
-
-        order.forEach(id => {
-          const app = appMap.get(id);
-          if (app) {
-            orderedApps.push(app);
-            seenIds.add(id);
-          }
-        });
-
-        currentApps.forEach(app => {
-          if (!seenIds.has(app.id)) {
-            orderedApps.push(app);
-          }
-        });
-
-        setApps(orderedApps);
-      } catch (e) {
-        setApps(currentApps);
-      }
-    } else {
-      setApps(currentApps);
-    }
-
-    // Restore Favorites Order
-    const currentFavorites = currentApps.filter(app => app.favorite).map(app => app.id);
-    if (savedFavOrderStr) {
-      try {
-        const savedFavOrder = JSON.parse(savedFavOrderStr) as string[];
-        const validFavOrder = savedFavOrder.filter(id => currentFavorites.includes(id));
-        const newFavs = currentFavorites.filter(id => !validFavOrder.includes(id));
-        setFavAppsOrder([...validFavOrder, ...newFavs]);
-      } catch (e) {
-        setFavAppsOrder(currentFavorites);
-      }
-    } else {
-      setFavAppsOrder(currentFavorites);
-    }
-
+    loadApps();
   }, []);
 
   useEffect(() => {
@@ -441,11 +639,16 @@ export default function Home() {
 
     if (activeIdStr === overIdStr) return;
 
-    // Check if handling Favorites (prefix 'fav-')
-    if (activeIdStr.startsWith('fav-') && overIdStr.startsWith('fav-')) {
+    // Identify which section the active item belongs to
+    const isActiveFav = activeIdStr.startsWith('fav-');
+    const activeBaseId = isActiveFav ? activeIdStr.substring(4) : activeIdStr;
+    const overBaseId = overIdStr.startsWith('fav-') ? overIdStr.substring(4) : overIdStr;
+
+    if (isActiveFav) {
+      // Reordering within Favorites context
       setFavAppsOrder((items) => {
-        const oldIndex = items.findIndex(id => `fav-${id}` === activeIdStr);
-        const newIndex = items.findIndex(id => `fav-${id}` === overIdStr);
+        const oldIndex = items.indexOf(activeBaseId);
+        const newIndex = items.indexOf(overBaseId);
 
         if (oldIndex !== -1 && newIndex !== -1) {
           const newOrder = arrayMove(items, oldIndex, newIndex);
@@ -454,75 +657,95 @@ export default function Home() {
         }
         return items;
       });
-    }
-    // Check if handling All Apps (no prefix or prefix 'app-')
-    else if (!activeIdStr.startsWith('fav-') && !overIdStr.startsWith('fav-')) {
+    } else {
+      // Reordering within All Apps context
       setApps((items) => {
-        const oldIndex = items.findIndex((item) => item.id === activeIdStr);
-        const newIndex = items.findIndex((item) => item.id === overIdStr);
-        const newOrder = arrayMove(items, oldIndex, newIndex);
+        const oldIndex = items.findIndex((item) => item.id === activeBaseId);
+        const newIndex = items.findIndex((item) => item.id === overBaseId);
 
-        const orderIds = newOrder.map(app => app.id);
-        localStorage.setItem("appOrder", JSON.stringify(orderIds));
-
-        return newOrder;
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const newOrder = arrayMove(items, oldIndex, newIndex);
+          const orderIds = newOrder.map(app => app.id);
+          localStorage.setItem("appOrder", JSON.stringify(orderIds));
+          return newOrder;
+        }
+        return items;
       });
     }
   };
 
   const toggleFavorite = (id: string) => {
-    const updatedApps = apps.map(app =>
-      app.id === id ? { ...app, favorite: !app.favorite } : app
-    );
-    setApps(updatedApps);
-    persistCustomApps(updatedApps);
+    setApps(prevApps => {
+      const updatedApps = prevApps.map(app =>
+        app.id === id ? { ...app, favorite: !app.favorite } : app
+      );
 
-    const app = updatedApps.find(a => a.id === id);
-    if (app) {
-      if (app.favorite) {
-        setFavAppsOrder(prev => {
-          const newOrder = [...prev, id];
-          localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
-          return newOrder;
-        });
+      // Persist favorite status
+      const favoriteIds = updatedApps.filter(a => a.favorite).map(a => a.id);
+      localStorage.setItem("favoriteIds", JSON.stringify(favoriteIds));
+
+      // Also persist custom apps (their metadata)
+      const customApps = updatedApps.filter(app => app.id.startsWith("custom-"));
+      localStorage.setItem("customApps", JSON.stringify(customApps));
+
+      return updatedApps;
+    });
+
+    setFavAppsOrder(prev => {
+      const isFavorited = !prev.includes(id);
+      let newOrder;
+      if (isFavorited) {
+        newOrder = [...prev, id];
       } else {
-        setFavAppsOrder(prev => {
-          const newOrder = prev.filter(favId => favId !== id);
-          localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
-          return newOrder;
-        });
+        newOrder = prev.filter(favId => favId !== id);
       }
-    }
+      localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
+      return newOrder;
+    });
   };
 
   const addApp = (newApp: AppItem) => {
-    const updatedApps = [...apps, newApp];
-    setApps(updatedApps);
-    persistCustomApps(updatedApps);
+    setApps(prev => {
+      const updatedApps = [...prev, newApp];
+      // Persist custom apps
+      const customApps = updatedApps.filter(app => app.id.startsWith("custom-"));
+      localStorage.setItem("customApps", JSON.stringify(customApps));
 
-    // Also update order
-    const orderIds = updatedApps.map(app => app.id);
-    localStorage.setItem("appOrder", JSON.stringify(orderIds));
+      // Persist order
+      const orderIds = updatedApps.map(app => app.id);
+      localStorage.setItem("appOrder", JSON.stringify(orderIds));
+
+      return updatedApps;
+    });
   };
 
   const deleteApp = (id: string) => {
-    const updatedApps = apps.filter(app => app.id !== id);
-    setApps(updatedApps);
-    persistCustomApps(updatedApps);
+    setApps(prev => {
+      const updatedApps = prev.filter(app => app.id !== id);
 
-    const orderIds = updatedApps.map(app => app.id);
-    localStorage.setItem("appOrder", JSON.stringify(orderIds));
+      // Persist custom apps
+      const customApps = updatedApps.filter(app => app.id.startsWith("custom-"));
+      localStorage.setItem("customApps", JSON.stringify(customApps));
+
+      // Persist order
+      const orderIds = updatedApps.map(app => app.id);
+      localStorage.setItem("appOrder", JSON.stringify(orderIds));
+
+      return updatedApps;
+    });
 
     setFavAppsOrder(prev => {
       const newOrder = prev.filter(favId => favId !== id);
       localStorage.setItem("favAppOrder", JSON.stringify(newOrder));
       return newOrder;
     });
-  };
 
-  const persistCustomApps = (allApps: AppItem[]) => {
-    const customApps = allApps.filter(app => app.id.startsWith("custom-"));
-    localStorage.setItem("customApps", JSON.stringify(customApps));
+    // Also remove from favoriteIds
+    const savedFavoriteIds = localStorage.getItem("favoriteIds");
+    if (savedFavoriteIds) {
+      const ids = JSON.parse(savedFavoriteIds) as string[];
+      localStorage.setItem("favoriteIds", JSON.stringify(ids.filter(fid => fid !== id)));
+    }
   };
 
   const filteredApps = apps.filter(app =>
@@ -583,6 +806,16 @@ export default function Home() {
             <LogOut size={18} className="group-hover:-translate-x-0.5 transition-transform" />
             <span className="text-sm font-medium">Logout</span>
           </button>
+
+          {user?.isAdmin && (
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="p-2.5 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+              title="Admin Settings"
+            >
+              <Settings size={20} />
+            </button>
+          )}
         </div>
       </header>
 
@@ -720,6 +953,12 @@ export default function Home() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAdd={addApp}
+      />
+
+      <AdminManagementModal
+        isOpen={isAdminModalOpen}
+        onClose={() => setIsAdminModalOpen(false)}
+        onUpdateGlobalApps={loadApps}
       />
     </div>
   );

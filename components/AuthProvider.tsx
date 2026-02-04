@@ -8,6 +8,7 @@ interface User {
     name: string;
     email: string;
     picture: string;
+    isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -28,7 +29,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         const savedUser = localStorage.getItem("auth_user");
         if (savedUser) {
-            setUser(JSON.parse(savedUser));
+            const parsedUser = JSON.parse(savedUser);
+            // Re-check admin status on load to ensure stale sessions are updated
+            const updatedUser = { ...parsedUser, isAdmin: checkAdmin(parsedUser.email) };
+            setUser(updatedUser);
         }
         setLoading(false);
     }, []);
@@ -43,9 +47,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user, loading, pathname, router]);
 
+    const checkAdmin = (email: string) => {
+        const adminList = JSON.parse(localStorage.getItem("admin_list") || '["harrypark@madeone.kr"]');
+        return adminList.includes(email);
+    };
+
     const login = (userData: User) => {
-        setUser(userData);
-        localStorage.setItem("auth_user", JSON.stringify(userData));
+        const userWithRole = { ...userData, isAdmin: checkAdmin(userData.email) };
+        setUser(userWithRole);
+        localStorage.setItem("auth_user", JSON.stringify(userWithRole));
         router.push("/");
     };
 
