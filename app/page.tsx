@@ -115,19 +115,23 @@ const APPS: AppItem[] = [
   { id: "cost", name: "고정비", category: ["Admin"], icon: "/icon_cost.png", url: "https://cost.madeone.kr", favorite: true },
   { id: "commute", name: "출퇴근", category: ["Admin"], icon: "/icon_commute.png", url: "https://hr.madeone.kr", favorite: true },
   { id: "asset", name: "자산관리", category: ["Admin"], icon: "/icon_asset.png", url: "https://asset.madeone.kr", favorite: true },
-  { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket-dashboard-291463553101.asia-northeast3.run.app/", favorite: true },
+  { id: "ticket", name: "티켓관리", category: ["Admin", "Ops"], icon: "/icon_ticket.png", url: "https://ticket-dashboard-5tiixftlga-du.a.run.app/", favorite: true },
   { id: "vvip", name: "VVIP", category: ["Admin", "Ops"], icon: "/icon_vvip.png", url: "https://vvip.madeone.kr", favorite: true },
   { id: "kpop", name: "아티스트", category: ["Admin"], icon: "/icon_kpop.png", url: "https://artist.madeone.kr", favorite: true },
   { id: "marketing", name: "마케팅", category: ["Admin"], icon: "/icon_marketing.png", url: "https://script.google.com/macros/s/AKfycbwaaA5fhmo2AEwzUujxrxrNsvtHIigo9LYPuVRAFIF4UjW11mOsqoZVVToUjSZ5W8te/exec", favorite: true },
 ];
 
 const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen: boolean, onClose: () => void, onUpdateGlobalApps: () => void }) => {
+  const { refreshAdminStatus } = useAuth();
   const [activeTab, setActiveTab] = useState<"apps" | "admins">("apps");
   const [appName, setAppName] = useState("");
   const [appUrl, setAppUrl] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [globalApps, setGlobalApps] = useState<AppItem[]>([]);
   const [adminList, setAdminList] = useState<string[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editUrl, setEditUrl] = useState("");
 
   useEffect(() => {
     if (isOpen) {
@@ -171,6 +175,23 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
     onUpdateGlobalApps();
   };
 
+  const startEditing = (app: AppItem) => {
+    setEditingId(app.id);
+    setEditName(app.name);
+    setEditUrl(app.url || "");
+  };
+
+  const saveEdit = () => {
+    if (!editingId) return;
+    const updated = globalApps.map(app =>
+      app.id === editingId ? { ...app, name: editName, url: editUrl } : app
+    );
+    localStorage.setItem("global_apps", JSON.stringify(updated));
+    setGlobalApps(updated);
+    setEditingId(null);
+    onUpdateGlobalApps();
+  };
+
   const handleAddAdmin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminEmail.includes("@")) return;
@@ -178,6 +199,7 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
     localStorage.setItem("admin_list", JSON.stringify(updated));
     setAdminList(updated);
     setAdminEmail("");
+    refreshAdminStatus();
   };
 
   const handleDeleteAdmin = (email: string) => {
@@ -185,6 +207,7 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
     const updated = adminList.filter(e => e !== email);
     localStorage.setItem("admin_list", JSON.stringify(updated));
     setAdminList(updated);
+    refreshAdminStatus();
   };
 
   return (
@@ -192,19 +215,41 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-md" />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10">
-            <div className="flex border-b border-zinc-100 dark:border-white/5">
-              <button onClick={() => setActiveTab("apps")} className={`flex-1 py-6 font-bold text-sm tracking-widest uppercase transition-all ${activeTab === "apps" ? "text-blue-500 bg-blue-50/50 dark:bg-blue-500/5" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"}`}>전사 앱 관리</button>
-              <button onClick={() => setActiveTab("admins")} className={`flex-1 py-6 font-bold text-sm tracking-widest uppercase transition-all ${activeTab === "admins" ? "text-blue-500 bg-blue-50/50 dark:bg-blue-500/5" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"}`}>관리자 권한 관리</button>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2.5rem] overflow-hidden shadow-2xl border border-zinc-100 dark:border-white/10">
+            <div className="flex border-b border-zinc-100 dark:border-white/5 p-1 bg-zinc-50/50 dark:bg-black/20">
+              <button
+                onClick={() => setActiveTab("apps")}
+                className={`flex-1 py-4 font-bold text-xs tracking-widest uppercase transition-all rounded-2xl ${activeTab === "apps"
+                  ? "text-blue-500 bg-white dark:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-white/10"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  }`}
+              >
+                앱 관리
+              </button>
+              <button
+                onClick={() => setActiveTab("admins")}
+                className={`flex-1 py-4 font-bold text-xs tracking-widest uppercase transition-all rounded-2xl ${activeTab === "admins"
+                  ? "text-blue-500 bg-white dark:bg-zinc-800 shadow-sm border border-zinc-200 dark:border-white/10"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                  }`}
+              >
+                관리자 권한 관리
+              </button>
             </div>
 
             <div className="p-8 max-h-[70vh] overflow-y-auto">
               {activeTab === "apps" ? (
                 <div className="space-y-8">
-                  <form onSubmit={handleAddApp} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50 dark:bg-white/5 p-6 rounded-3xl border border-zinc-100 dark:border-white/5">
-                    <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} placeholder="앱 이름" className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 dark:text-white placeholder:text-zinc-400" required />
-                    <input type="text" value={appUrl} onChange={(e) => setAppUrl(e.target.value)} placeholder="접속 주소 (예: naver.com)" className="bg-white dark:bg-zinc-800 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 dark:text-white placeholder:text-zinc-400" required />
-                    <button type="submit" className="md:col-span-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-bold py-4 rounded-xl hover:opacity-90 transition-opacity">전사 필수 앱으로 추가</button>
+                  <form onSubmit={handleAddApp} className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-100/50 dark:bg-white/5 p-6 rounded-3xl border border-zinc-200/50 dark:border-white/5 shadow-inner">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider ml-1">App Name</label>
+                      <input type="text" value={appName} onChange={(e) => setAppName(e.target.value)} placeholder="앱 이름" className="w-full bg-white dark:bg-zinc-800/50 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 text-zinc-900 dark:text-white placeholder:text-zinc-400 transition-all font-medium" required />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider ml-1">URL</label>
+                      <input type="text" value={appUrl} onChange={(e) => setAppUrl(e.target.value)} placeholder="접속 주소 (예: naver.com)" className="w-full bg-white dark:bg-zinc-800/50 px-4 py-3 rounded-xl border border-zinc-200 dark:border-white/10 outline-none focus:border-blue-500 text-zinc-900 dark:text-white placeholder:text-zinc-400 transition-all font-medium" required />
+                    </div>
+                    <button type="submit" className="md:col-span-2 bg-zinc-900 dark:bg-blue-600 text-white font-bold py-4 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all shadow-lg mt-2">필수 앱으로 추가</button>
                   </form>
 
                   <div className="space-y-6">
@@ -213,35 +258,49 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
                       <div className="space-y-3">
                         {/* Show hardcoded APPS first but without delete option for now */}
                         {APPS.map(app => (
-                          <div key={`source-${app.id}`} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5 opacity-80">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
-                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-cover" alt="" /> : <Globe className="text-zinc-400" size={20} />}
+                          <div key={`source-${app.id}`} className="group flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all shadow-sm">
+                            <div className="flex items-center gap-4 truncate">
+                              <div className="w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-1 border border-zinc-100 dark:border-white/5 shadow-inner">
+                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-contain" alt="" /> : <Globe className="text-zinc-400" size={24} />}
                               </div>
-                              <div>
-                                <div className="font-bold dark:text-white flex items-center gap-2">
+                              <div className="truncate">
+                                <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 truncate">
                                   {app.name}
                                   <span className="text-[10px] px-1.5 py-0.5 bg-zinc-200 dark:bg-zinc-700 rounded-md text-zinc-500 dark:text-zinc-400">시스템 기본</span>
                                 </div>
-                                <div className="text-xs text-zinc-500 truncate max-w-[250px]">{app.url}</div>
+                                <div className="text-xs text-zinc-500 truncate">{app.url}</div>
                               </div>
                             </div>
-                            <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Default</div>
+                            <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider shrink-0">Default</div>
                           </div>
                         ))}
 
                         {globalApps.map(app => (
-                          <div key={app.id} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5">
-                            <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center">
-                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-cover" alt="" /> : <Globe className="text-zinc-400" size={20} />}
+                          <div key={app.id} className="group flex items-center justify-between p-4 bg-white dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5 hover:border-blue-500/30 dark:hover:border-blue-500/30 transition-all shadow-sm">
+                            <div className="flex items-center gap-4 w-full truncate">
+                              <div className="w-12 h-12 shrink-0 rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center p-1 border border-zinc-100 dark:border-white/5 shadow-inner">
+                                {typeof app.icon === 'string' ? <img src={app.icon} className="w-full h-full object-contain" alt="" /> : <Globe className="text-zinc-400" size={24} />}
                               </div>
-                              <div>
-                                <div className="font-bold dark:text-white">{app.name}</div>
-                                <div className="text-xs text-zinc-500 truncate max-w-[250px]">{app.url}</div>
-                              </div>
+                              {editingId === app.id ? (
+                                <div className="flex flex-col gap-2 w-full pr-4">
+                                  <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-blue-500 text-sm text-zinc-900 dark:text-white outline-none ring-2 ring-blue-500/20" />
+                                  <input type="text" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="bg-white dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-blue-500 text-xs text-zinc-900 dark:text-white outline-none ring-2 ring-blue-500/20" />
+                                </div>
+                              ) : (
+                                <div className="truncate">
+                                  <div className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{app.name}</div>
+                                  <div className="text-xs text-zinc-500 truncate">{app.url}</div>
+                                </div>
+                              )}
                             </div>
-                            <button onClick={() => handleDeleteApp(app.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors"><X size={18} /></button>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {editingId === app.id ? (
+                                <button onClick={saveEdit} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-full transition-colors font-bold text-sm whitespace-nowrap px-4 py-2 border border-blue-500/50">저장</button>
+                              ) : (
+                                <button onClick={() => startEditing(app)} className="p-2.5 text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all"><Settings size={18} /></button>
+                              )}
+                              <button onClick={() => handleDeleteApp(app.id)} className="p-2.5 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-all"><X size={18} /></button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -256,8 +315,8 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
                   </form>
                   <div className="space-y-3">
                     {adminList.map(email => (
-                      <div key={email} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-white/5 rounded-2xl border border-zinc-100 dark:border-white/5">
-                        <span className="font-medium dark:text-white">{email}</span>
+                      <div key={email} className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-white/5">
+                        <span className="font-medium text-zinc-900 dark:text-white">{email}</span>
                         {email !== "harrypark@madeone.kr" && (
                           <button onClick={() => handleDeleteAdmin(email)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-full transition-colors"><X size={18} /></button>
                         )}
@@ -268,7 +327,7 @@ const AdminManagementModal = ({ isOpen, onClose, onUpdateGlobalApps }: { isOpen:
               )}
             </div>
             <div className="p-6 bg-zinc-50 dark:bg-zinc-800/50 flex justify-end">
-              <button onClick={onClose} className="px-8 py-3 bg-zinc-200 dark:bg-zinc-700 dark:text-white rounded-xl font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors">닫기</button>
+              <button onClick={onClose} className="px-8 py-3 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-white rounded-xl font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors">닫기</button>
             </div>
           </motion.div>
         </div>
@@ -771,13 +830,10 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 h-20 px-6 md:px-12 flex items-center justify-between z-50">
         <div className="flex items-center">
           <div className="relative h-8 w-32 md:h-10 md:w-40">
-            <Image
-              src="/logo.png"
+            <img
+              src="/icon-192x192.png"
               alt="MADEONE"
-              fill
-              style={{ filter: theme === "dark" ? "brightness(0) invert(1)" : "brightness(0)" }}
-              className="object-contain transition-all duration-300"
-              priority
+              className="w-10 h-10 object-contain rounded-xl shadow-md"
             />
           </div>
         </div>

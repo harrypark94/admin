@@ -16,6 +16,7 @@ interface AuthContextType {
     login: (userData: User) => void;
     logout: () => void;
     loading: boolean;
+    refreshAdminStatus: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,11 +66,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         router.push("/login");
     };
 
+    const refreshAdminStatus = () => {
+        if (!user) return;
+        const isAdmin = checkAdmin(user.email);
+        if (user.isAdmin !== isAdmin) {
+            const updatedUser = { ...user, isAdmin };
+            setUser(updatedUser);
+            localStorage.setItem("auth_user", JSON.stringify(updatedUser));
+        }
+    };
+
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "875374026106-sm300i0093g0puid7erhfeftu747thiu.apps.googleusercontent.com";
 
     return (
         <GoogleOAuthProvider clientId={clientId}>
-            <AuthContext.Provider value={{ user, login, logout, loading }}>
+            <AuthContext.Provider value={{ user, login, logout, loading, refreshAdminStatus }}>
                 {children}
             </AuthContext.Provider>
         </GoogleOAuthProvider>
