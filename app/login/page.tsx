@@ -42,15 +42,14 @@ export default function LoginPage() {
                 className="w-full max-w-sm relative z-10"
             >
                 <div className="flex flex-col items-center">
-                    {/* Logo Section */}
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.2 }}
-                        className="mb-16 relative w-56 h-14"
+                        className="mb-16 relative w-64 h-16"
                     >
                         <Image
-                            src="/logo.png"
+                            src="/logo_horizontal.png"
                             alt="MADEONE"
                             fill
                             className="object-contain brightness-0 invert"

@@ -829,12 +829,15 @@ export default function Home() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 h-20 px-6 md:px-12 flex items-center justify-between z-50">
         <div className="flex items-center">
-          <div className="relative h-8 w-32 md:h-10 md:w-40">
-            <img
-              src="/icon-192x192.png"
-              alt="MADEONE"
-              className="w-10 h-10 object-contain rounded-xl shadow-md"
-            />
+          <div className="flex items-center">
+            <div className="relative h-8 w-32 md:h-12 md:w-40">
+              <Image
+                src="/logo_horizontal.png"
+                alt="MADEONE"
+                fill
+                className="object-contain dark:brightness-0 dark:invert transition-all"
+              />
+            </div>
           </div>
         </div>
 
